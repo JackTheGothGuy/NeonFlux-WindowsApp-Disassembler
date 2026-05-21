@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""
-NEONFLUX — Binary Disassembler & Editor v4
-Frutiger Aero edition — glossy, glassy, translucent vibes
-- Hex Editor  : editable bytes + ASCII, 16-byte rows, ROM space meter
-- Disassembly : editable mnemonic+operands, assembles back to bytes on save
-- Search, Goto, Patch, Save / Save As
-Dependencies: pip install capstone pefile keystone-engine
-"""
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
@@ -38,9 +30,116 @@ import sys
 
 
 
+#THEMES -------------------------------------------------------------------
 
+THEMES = {
+    "DORFic": {
+        "BG": "#fff7f0",
+        "BG2": "#fff2e6",
+        "BG3": "#ffe4cc",
+        "GLASS": "#ffffff",
+        "BORDER": "#ff9a3c",
+        "BORDER_DARK": "#d96a00",
+        "ACCENT": "#ff7a00",
+        "ACCENT2": "#ffb347",
+        "ACCENT3": "#ffd08a",
+        "GREEN_GLOW": "#8dff8d",
+        "CHROME": "#ffe0bf",
+        "FG": "#4a2500",
+        "FG_DIM": "#8a5a2b",
+        "FG_LIGHT": "#ffffff",
+        "HILIGHT": "#ffd8b0",
+        "DIRTY_BG": "#fff1c2",
+        "ERR_BG": "#ffd4d4",
+        "SHADOW": "#cc8a4d",
+    },
 
-# ── Frutiger Aero Palette ────────────────────────────────────────────────────
+    "Glossy Aqua": {
+        "BG": "#c9f8ff",
+        "BG2": "#efffff",
+        "BG3": "#8eeeff",
+        "GLASS": "#ffffff",
+        "BORDER": "#00cfff",
+        "BORDER_DARK": "#008fb3",
+        "ACCENT": "#009dff",
+        "ACCENT2": "#00ffb7",
+        "ACCENT3": "#6ffff0",
+        "GREEN_GLOW": "#8dffcb",
+        "CHROME": "#d7f8ff",
+        "FG": "#003847",
+        "FG_DIM": "#3c7f91",
+        "FG_LIGHT": "#ffffff",
+        "HILIGHT": "#b8f6ff",
+        "DIRTY_BG": "#fff0a6",
+        "ERR_BG": "#ffd1d1",
+        "SHADOW": "#5fcfe6",
+    },
+
+    "Dark Frutiger": {
+        "BG": "#0a1218",
+        "BG2": "#10202b",
+        "BG3": "#173444",
+        "GLASS": "#20495c",
+        "BORDER": "#00c8ff",
+        "BORDER_DARK": "#006f91",
+        "ACCENT": "#00bfff",
+        "ACCENT2": "#00ffbf",
+        "ACCENT3": "#6ae8ff",
+        "GREEN_GLOW": "#6dffcb",
+        "CHROME": "#355767",
+        "FG": "#e8fbff",
+        "FG_DIM": "#89c0cf",
+        "FG_LIGHT": "#ffffff",
+        "HILIGHT": "#29586d",
+        "DIRTY_BG": "#6d5f1c",
+        "ERR_BG": "#662727",
+        "SHADOW": "#050b0f",
+    },
+
+    "Galaxy": {
+        "BG": "#12001f",
+        "BG2": "#1f0938",
+        "BG3": "#31125e",
+        "GLASS": "#44207a",
+        "BORDER": "#9d5cff",
+        "BORDER_DARK": "#5a24c4",
+        "ACCENT": "#42d9ff",
+        "ACCENT2": "#ff3de2",
+        "ACCENT3": "#b18cff",
+        "GREEN_GLOW": "#70ffe8",
+        "CHROME": "#5b3f8c",
+        "FG": "#f8efff",
+        "FG_DIM": "#c8a8ea",
+        "FG_LIGHT": "#ffffff",
+        "HILIGHT": "#6344a1",
+        "DIRTY_BG": "#8b5bcc",
+        "ERR_BG": "#6b2146",
+        "SHADOW": "#07020f",
+    },
+
+    "Y2K Girly": {
+        "BG": "#ffe0f5",
+        "BG2": "#fff2fb",
+        "BG3": "#ffb5e3",
+        "GLASS": "#ffffff",
+        "BORDER": "#ff63c3",
+        "BORDER_DARK": "#d43291",
+        "ACCENT": "#ff2fb2",
+        "ACCENT2": "#58d8ff",
+        "ACCENT3": "#b56dff",
+        "GREEN_GLOW": "#aafff0",
+        "CHROME": "#ffd3ef",
+        "FG": "#6a1457",
+        "FG_DIM": "#b25a96",
+        "FG_LIGHT": "#ffffff",
+        "HILIGHT": "#ffc8ea",
+        "DIRTY_BG": "#ffe49d",
+        "ERR_BG": "#ffcad8",
+        "SHADOW": "#d995bf",
+    }
+}
+
+#Frutiger Aero Palette ----------------------------------------------------
 # Sky blues, aqua greens, glassy whites, chrome accents
 
 BG           = "#d6eaf8"        # sky-blue background
@@ -71,7 +170,7 @@ FONT_LOGO    = ("Segoe UI", 18, "bold")
 COLS = 16
 
 
-# ── Gradient / Gloss helpers ─────────────────────────────────────────────────
+#Gradient / Gloss helpers -------------------------------------------------
 
 def draw_gloss_rect(canvas, x1, y1, x2, y2, color_top, color_bot,
                     radius=8, outline=None):
@@ -101,7 +200,7 @@ def draw_gloss_rect(canvas, x1, y1, x2, y2, color_top, color_bot,
                           style="arc", outline=outline)
 
 
-# ── GlossButton ─────────────────────────────────────────────────────────────
+#GlossButton -------------------------------------------------------------
 
 class GlossButton(tk.Canvas):
     """A glossy Frutiger Aero-style button drawn on canvas."""
@@ -208,7 +307,7 @@ class GlossButton(tk.Canvas):
         return f"#{r:02x}{g:02x}{b:02x}"
 
 
-# ── Architecture helpers ─────────────────────────────────────────────────────
+#Architecture helpers -----------------------------------------------------
 
 def get_architecture(pe):
     machine = pe.FILE_HEADER.Machine
@@ -241,7 +340,7 @@ def extract_strings(data, min_len=5):
     return results
 
 
-# ── Simple x86 assembler ──────────────────────────────────────────────────────
+#Simple x86 assembler ------------------------------------------------------
 
 def simple_assemble(mnem, ops, original_size, bits=64):
     mnem = mnem.strip().lower()
@@ -346,7 +445,7 @@ def _pad(raw, size):
     return raw[:size]
 
 
-# ── Widget helpers ────────────────────────────────────────────────────────────
+#Widget helpers ------------------------------------------------------------
 
 def write_text(widget, content, clear=True):
     widget.configure(state="normal")
@@ -381,7 +480,7 @@ def make_scrolled_text(parent, editable=False, bg=BG2, **kwargs):
     return frame
 
 
-# ── Glass Panel label helper ──────────────────────────────────────────────────
+#Glass Panel label helper --------------------------------------------------
 
 def glass_label(parent, text, bg=BG3):
     """A section header label with a separator line."""
@@ -393,7 +492,7 @@ def glass_label(parent, text, bg=BG3):
                                            expand=True, padx=(4, 0))
 
 
-# ── ROM Space meter ───────────────────────────────────────────────────────────
+#ROM Space meter -----------------------------------------------------------
 
 class RomMeter(tk.Frame):
     def __init__(self, parent, **kwargs):
@@ -439,7 +538,7 @@ class RomMeter(tk.Frame):
         c.create_rectangle(x1, y1+r, x2, y2-r, fill=color, outline="")
 
 
-# ── Search Bar ────────────────────────────────────────────────────────────────
+#Search Bar ----------------------------------------------------------------
 
 class SearchBar(tk.Frame):
     def __init__(self, parent, target=None, keep_state=False, **kwargs):
@@ -555,7 +654,7 @@ class SearchBar(tk.Frame):
         self._current = (self._current - 1) % len(self._matches); self._jump()
 
 
-# ── Patch Dialog ──────────────────────────────────────────────────────────────
+#Patch Dialog --------------------------------------------------------------
 
 class PatchDialog(tk.Toplevel):
     def __init__(self, parent, raw_data, on_patched):
@@ -659,7 +758,7 @@ class PatchDialog(tk.Toplevel):
         self.destroy()
 
 
-# ── ttk Styles ────────────────────────────────────────────────────────────────
+#ttk Styles ----------------------------------------------------------------
 
 def configure_ttk_styles():
     s = ttk.Style()
@@ -693,7 +792,40 @@ def configure_ttk_styles():
           foreground=[("readonly", FG)])
 
 
-# ── Main Application ──────────────────────────────────────────────────────────
+
+
+def apply_theme(theme_name):
+    global BG, BG2, BG3, GLASS
+    global BORDER, BORDER_DARK
+    global ACCENT, ACCENT2, ACCENT3
+    global GREEN_GLOW, CHROME
+    global FG, FG_DIM, FG_LIGHT
+    global HILIGHT, DIRTY_BG, ERR_BG, SHADOW
+
+    theme = THEMES[theme_name]
+
+    BG           = theme["BG"]
+    BG2          = theme["BG2"]
+    BG3          = theme["BG3"]
+    GLASS        = theme["GLASS"]
+    BORDER       = theme["BORDER"]
+    BORDER_DARK  = theme["BORDER_DARK"]
+    ACCENT       = theme["ACCENT"]
+    ACCENT2      = theme["ACCENT2"]
+    ACCENT3      = theme["ACCENT3"]
+    GREEN_GLOW   = theme["GREEN_GLOW"]
+    CHROME       = theme["CHROME"]
+    FG           = theme["FG"]
+    FG_DIM       = theme["FG_DIM"]
+    FG_LIGHT     = theme["FG_LIGHT"]
+    HILIGHT      = theme["HILIGHT"]
+    DIRTY_BG     = theme["DIRTY_BG"]
+    ERR_BG       = theme["ERR_BG"]
+    SHADOW       = theme["SHADOW"]
+
+    configure_ttk_styles()
+
+#Main Application ----------------------------------------------------------
 
 class DisassemblerApp(tk.Tk):
     def __init__(self):
@@ -721,7 +853,61 @@ class DisassemblerApp(tk.Tk):
         self._bind_keys()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    # ── Menu ─────────────────────────────────────────────────────────────────
+    def _change_theme(self, theme_name):
+     apply_theme(theme_name)
+
+     self.configure(bg=BG)
+
+     def recolor(widget):
+        try:
+            cls = widget.winfo_class()
+
+            if cls in ("Frame", "LabelFrame", "PanedWindow"):
+                widget.configure(bg=BG)
+
+            elif cls == "Label":
+                widget.configure(bg=BG, fg=FG)
+
+            elif cls == "Text":
+                widget.configure(
+                    bg=GLASS,
+                    fg=FG,
+                    insertbackground=ACCENT,
+                    selectbackground=HILIGHT
+                )
+
+            elif cls == "Listbox":
+                widget.configure(
+                    bg=GLASS,
+                    fg=FG,
+                    selectbackground=HILIGHT,
+                    selectforeground=FG
+                )
+
+            elif cls == "Entry":
+                widget.configure(
+                    bg=GLASS,
+                    fg=FG,
+                    insertbackground=ACCENT
+                )
+
+            elif cls == "Canvas":
+                widget.configure(bg=BG3)
+
+        except:
+            pass
+
+        for child in widget.winfo_children():
+            recolor(child)
+
+     recolor(self)
+
+     self._setup_asm_tags()
+     self._setup_hex_tags()
+
+     self._set_status(f"Theme changed to {theme_name}")
+     
+    #Menu -----------------------------------------------------------------
 
     def _build_menu(self):
         def _menu(parent, label, items):
@@ -755,14 +941,70 @@ class DisassemblerApp(tk.Tk):
             ("Search Disasm   Ctrl+D", self._focus_asm_search),
             ("Search Hex      Ctrl+H", self._focus_hex_search),
         ])
-        _menu(mb, "View", [
-            ("Re-analyze      F5", self._run_analysis),
-        ])
+        # VIEW MENU
+        view_menu = tk.Menu(
+            mb,
+            bg=GLASS,
+            fg=FG,
+            activebackground=HILIGHT,
+            activeforeground=ACCENT,
+            relief="flat",
+            tearoff=False,
+            font=FONT_UI
+        )
+
+        mb.add_cascade(label="View", menu=view_menu)
+
+        view_menu.add_command(
+            label="Re-analyze      F5",
+            command=self._run_analysis
+        )
+
+        view_menu.add_separator()
+
+        theme_menu = tk.Menu(
+            view_menu,
+            bg=GLASS,
+            fg=FG,
+            activebackground=HILIGHT,
+            activeforeground=ACCENT,
+            relief="flat",
+            tearoff=False,
+            font=FONT_UI
+        )
+
+        view_menu.add_cascade(label="Themes", menu=theme_menu)
+
+        theme_menu.add_command(
+            label=" DORFic",
+            command=lambda: self._change_theme("DORFic")
+        )
+
+        theme_menu.add_command(
+            label=" Glossy Aqua",
+            command=lambda: self._change_theme("Glossy Aqua")
+        )
+
+        theme_menu.add_command(
+            label=" Dark Frutiger",
+            command=lambda: self._change_theme("Dark Frutiger")
+        )
+
+        theme_menu.add_command(
+            label=" Galaxy",
+            command=lambda: self._change_theme("Galaxy")
+        )
+
+        theme_menu.add_command(
+            label=" Y2K Girly",
+            command=lambda: self._change_theme("Y2K Girly")
+        )
+        
         _menu(mb, "About", [
             ("About NEONFLUX", self._show_about_tab),
         ])
 
-    # ── Top Bar ───────────────────────────────────────────────────────────────
+    #Top Bar ---------------------------------------------------------------
 
     def _build_topbar(self):
         # Outer container with gradient-like effect via layered frames
@@ -840,7 +1082,7 @@ class DisassemblerApp(tk.Tk):
                                           font=FONT_UI)
         self.section_menu.grid(row=0, column=3, ipady=3)
 
-    # ── Main Layout ───────────────────────────────────────────────────────────
+    #Main Layout -----------------------------------------------------------
 
     def _build_main(self):
         pane = tk.PanedWindow(self, orient="horizontal", bg=BG,
@@ -848,7 +1090,7 @@ class DisassemblerApp(tk.Tk):
                               sashpad=2, bd=0)
         pane.pack(fill="both", expand=True)
 
-        # ── Left panel ───────────────────────────────────────────────────────
+        #Left panel -------------------------------------------------------
         left = tk.Frame(pane, bg=BG, width=320)
         pane.add(left, minsize=220)
 
@@ -887,14 +1129,14 @@ class DisassemblerApp(tk.Tk):
         self.str_frame = make_scrolled_text(left)
         self.str_frame.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
-        # ── Right: Notebook ───────────────────────────────────────────────────
+        #Right: Notebook ---------------------------------------------------
         right = tk.Frame(pane, bg=BG)
         pane.add(right, minsize=620)
 
         self.nb = ttk.Notebook(right, style="N.TNotebook")
         self.nb.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # ── Tab 0: Disassembly ────────────────────────────────────────────────
+        #Tab 0: Disassembly ------------------------------------------------
         asm_outer = tk.Frame(self.nb, bg=BG2)
         self.nb.add(asm_outer, text="  ⚙  DISASSEMBLY  ")
 
@@ -916,9 +1158,9 @@ class DisassemblerApp(tk.Tk):
         self._setup_asm_tags()
         self.asm_text.bind("<KeyRelease>", self._asm_on_key)
 
-        # ── Tab 1: Hex Editor ─────────────────────────────────────────────────
+        #Tab 1: Hex Editor -------------------------------------------------
         hex_outer = tk.Frame(self.nb, bg=BG2)
-        self.nb.add(hex_outer, text="  🔢  HEX EDITOR  ")
+        self.nb.add(hex_outer, text="  🔢  HEX VIEWER  ")
 
         hex_info = tk.Frame(hex_outer, bg=BG3, pady=4)
         hex_info.pack(fill="x")
@@ -937,10 +1179,10 @@ class DisassemblerApp(tk.Tk):
         self._setup_hex_tags()
         self.hex_text.bind("<KeyRelease>", self._hex_on_key)
 
-        # ── Tab 2: About ──────────────────────────────────────────────────────
+        #Tab 2: About ------------------------------------------------------
         self._build_about_tab()
 
-    # ── About Tab ────────────────────────────────────────────────────────────
+    #About Tab ------------------------------------------------------------
 
     def _build_about_tab(self):
         about_outer = tk.Frame(self.nb, bg=BG)
@@ -1042,7 +1284,7 @@ class DisassemblerApp(tk.Tk):
             "Version  : BETA 0.4\n"
             "\n"
             "Info\n"
-            "────────────────────────────────────────────\n"
+            "--------------------------------------------\n"
             "Created for a school project and for\n"
             "disassembling Windows PE binaries.\n"
             "\n"
@@ -1092,7 +1334,7 @@ class DisassemblerApp(tk.Tk):
     def _show_about_tab(self):
         self.nb.select(self._about_tab_index)
 
-    # ── Status Bar ───────────────────────────────────────────────────────────
+    #Status Bar -----------------------------------------------------------
 
     def _build_statusbar(self):
         bar = tk.Frame(self, bg=BG3, height=28)
@@ -1109,7 +1351,7 @@ class DisassemblerApp(tk.Tk):
         self.progress = ttk.Progressbar(bar, mode="indeterminate", length=120)
         self.progress.configure(style="P.Horizontal.TProgressbar")
 
-    # ── Text tag setup ───────────────────────────────────────────────────────
+    #Text tag setup -------------------------------------------------------
 
     def _setup_asm_tags(self):
         t = self.asm_text
@@ -1132,7 +1374,7 @@ class DisassemblerApp(tk.Tk):
         t.tag_configure("hex_sep",   foreground=BORDER_DARK)
         t.tag_configure("dirty",     background=DIRTY_BG)
 
-    # ── Key bindings ─────────────────────────────────────────────────────────
+    #Key bindings ---------------------------------------------------------
 
     def _bind_keys(self):
         self.bind("<Control-o>",      lambda e: self._open_file())
@@ -1148,7 +1390,7 @@ class DisassemblerApp(tk.Tk):
         self.bind("<F5>",             lambda e: self._run_analysis())
         self.bind("<Control-q>",      lambda e: self._on_close())
 
-    # ── File I/O ─────────────────────────────────────────────────────────────
+    #File I/O -------------------------------------------------------------
 
     def _open_file(self):
         path = filedialog.askopenfilename(
@@ -1221,7 +1463,7 @@ class DisassemblerApp(tk.Tk):
         if self.modified and not self._confirm_discard(): return
         self.destroy()
 
-    # ── Patch & GoTo ─────────────────────────────────────────────────────────
+    #Patch & GoTo ---------------------------------------------------------
 
     def _open_patch(self):
         if not self.raw_data: return
@@ -1268,7 +1510,7 @@ class DisassemblerApp(tk.Tk):
             f"0x{addr:08X} not found. Try raising the instruction limit.",
             parent=self)
 
-    # ── Search ───────────────────────────────────────────────────────────────
+    #Search ---------------------------------------------------------------
 
     def _focus_string_search(self):
         self.str_filter_var.set("")
@@ -1291,7 +1533,7 @@ class DisassemblerApp(tk.Tk):
     def _focus_hex_search(self):
         self.nb.select(1); self.hex_search.show()
 
-    # ── Analysis ─────────────────────────────────────────────────────────────
+    #Analysis -------------------------------------------------------------
 
     def _run_analysis(self):
         if not self.filepath: return
@@ -1326,7 +1568,7 @@ class DisassemblerApp(tk.Tk):
         self.progress.pack_forget()
         self.btn_analyze["state"] = "normal"
 
-    # ── PE Info ───────────────────────────────────────────────────────────────
+    #PE Info ---------------------------------------------------------------
 
     def _show_pe_info(self):
         pe = self.pe
@@ -1377,7 +1619,7 @@ class DisassemblerApp(tk.Tk):
         self.section_var.set(name)
         self._run_analysis()
 
-    # ── Disassembly ───────────────────────────────────────────────────────────
+    #Disassembly -----------------------------------------------------------
 
     def _disassemble_pe(self, raw):
         pe = self.pe
@@ -1397,7 +1639,7 @@ class DisassemblerApp(tk.Tk):
             data        = section.get_data()
             base_addr   = image_base + section.VirtualAddress
             file_offset = section.PointerToRawData
-            lines.append(("header", f"\n;; ── {sname}  0x{base_addr:08X} ──\n"))
+            lines.append(("header", f"\n;;{sname}  0x{base_addr:08X} --\n"))
             meta.append(None)
             count = 0
             for insn in md.disasm(data, base_addr):
@@ -1420,7 +1662,7 @@ class DisassemblerApp(tk.Tk):
         md = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
         md.detail = True
         limit = self._get_limit()
-        lines = [("header", ";; Raw binary — x86-64 assumed\n")]
+        lines = [("header", "\n")]
         meta  = [None]
         count = 0
         for insn in md.disasm(data, 0x0):
@@ -1457,7 +1699,7 @@ class DisassemblerApp(tk.Tk):
                 t.insert("end", f"{ops}\n", "ops")
         self.asm_dirty_lbl.config(text="")
 
-    # ── ASM edit tracking ─────────────────────────────────────────────────────
+    #ASM edit tracking -----------------------------------------------------
 
     def _asm_on_key(self, event=None):
         t    = self.asm_text
@@ -1466,7 +1708,7 @@ class DisassemblerApp(tk.Tk):
         self.asm_dirty_lbl.config(text="● edited — Ctrl+E to assemble")
         self._mark_modified()
 
-    # ── Apply ASM edits ───────────────────────────────────────────────────────
+    #Apply ASM edits -------------------------------------------------------
 
     def _apply_asm_edits(self):
         if not self._asm_meta:
@@ -1540,7 +1782,7 @@ class DisassemblerApp(tk.Tk):
         else:
             self._set_status("No changes detected in disassembly.")
 
-    # ── Hex Editor ────────────────────────────────────────────────────────────
+    #Hex Editor ------------------------------------------------------------
 
     def _populate_hex_editor(self, data):
         total = len(data)
@@ -1583,7 +1825,7 @@ class DisassemblerApp(tk.Tk):
         t.tag_add("dirty", f"{line}.0", f"{line}.end")
         self._mark_modified()
 
-    # ── Apply Hex edits ───────────────────────────────────────────────────────
+    #Apply Hex edits -------------------------------------------------------
 
     def _apply_hex_edits(self):
         t       = self.hex_text
@@ -1626,7 +1868,7 @@ class DisassemblerApp(tk.Tk):
         else:
             self._set_status("No hex changes detected.")
 
-    # ── Strings ───────────────────────────────────────────────────────────────
+    #Strings ---------------------------------------------------------------
 
     def _render_strings(self, found):
         lines = [f"  {len(found)} strings (min 5 chars)\n"]
@@ -1645,7 +1887,7 @@ class DisassemblerApp(tk.Tk):
         self._set_status(f"Strings: {len(filtered)} match(es)"
                          + (f" for '{q}'" if q else ""))
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    #Helpers ---------------------------------------------------------------
 
 
 
@@ -1686,7 +1928,7 @@ def resource_path(relative_path):
 
 
 
-# ── Entry ─────────────────────────────────────────────────────────────────────
+#Entry ---------------------------------------------------------------------
 
 if __name__ == "__main__":
     app = DisassemblerApp()
